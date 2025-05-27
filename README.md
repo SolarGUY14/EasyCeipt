@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EasyCeipt
 
-## Getting Started
+A modern web application built with Next.js, Flask, and Supabase.
 
-First, run the development server:
+## Tech Stack
 
+- Frontend: Next.js with TypeScript and Tailwind CSS
+- Backend: Flask (Python)
+- Database: Supabase (PostgreSQL)
+- Deployment: Vercel (Frontend) & TBD (Backend)
+
+## Setup Instructions
+
+### Prerequisites
+- Node.js (v18 or higher)
+- Python 3.8 or higher
+- npm or yarn
+- A Supabase account
+
+### Frontend Setup
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Create a `.env.local` file in the root directory with your Supabase credentials:
+```
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Start the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Backend Setup
+1. Navigate to the backend directory:
+```bash
+cd backend
+```
 
-## Learn More
+2. Create and activate a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-To learn more about Next.js, take a look at the following resources:
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Create a `.env` file in the backend directory:
+```
+SUPABASE_URL=your-supabase-project-url
+SUPABASE_KEY=your-supabase-service-key
+FLASK_SECRET_KEY=your-flask-secret-key
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Start the Flask server:
+```bash
+python app.py
+```
 
-## Deploy on Vercel
+## Development
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The frontend will be available at `http://localhost:3000`
+The backend API will be available at `http://localhost:5000`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request

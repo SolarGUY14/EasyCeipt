@@ -1,6 +1,41 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import Image from "next/image";
 
 export default function Home() {
+  const [backendStatus, setBackendStatus] = useState<string>('Loading...')
+  const [supabaseStatus, setSupabaseStatus] = useState<string>('Loading...')
+
+  useEffect(() => {
+    // Test Flask backend connection
+    fetch('http://localhost:5000/api/health')
+      .then(res => res.json())
+      .then(data => setBackendStatus(data.message))
+      .catch(err => setBackendStatus('Error connecting to backend'))
+
+    // Test Supabase connection
+    const testSupabase = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('_test')
+          .select('*')
+          .limit(1)
+        
+        if (error) {
+          setSupabaseStatus('Connected to Supabase (table not found, which is OK)')
+        } else {
+          setSupabaseStatus('Connected to Supabase successfully')
+        }
+      } catch (err) {
+        setSupabaseStatus('Error connecting to Supabase')
+      }
+    }
+
+    testSupabase()
+  }, [])
+
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
@@ -49,6 +84,26 @@ export default function Home() {
           >
             Read our docs
           </a>
+        </div>
+
+        <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-2 lg:text-left">
+          <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
+            <h2 className="mb-3 text-2xl font-semibold">
+              Backend Status
+            </h2>
+            <p className="m-0 max-w-[30ch] text-sm opacity-50">
+              {backendStatus}
+            </p>
+          </div>
+
+          <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
+            <h2 className="mb-3 text-2xl font-semibold">
+              Supabase Status
+            </h2>
+            <p className="m-0 max-w-[30ch] text-sm opacity-50">
+              {supabaseStatus}
+            </p>
+          </div>
         </div>
       </main>
       <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
