@@ -10,7 +10,7 @@ export default function Home() {
 
   useEffect(() => {
     // Test Flask backend connection
-    fetch('http://localhost:5000/api/health')
+    fetch('http://localhost:8000/api/health')
       .then(res => res.json())
       .then(data => setBackendStatus(data.message))
       .catch(err => setBackendStatus('Error connecting to backend'))

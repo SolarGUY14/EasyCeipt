@@ -17,7 +17,21 @@ A modern web application built with Next.js, Flask, and Supabase.
 - npm or yarn
 - A Supabase account
 
-### Frontend Setup
+### Quick Start
+The easiest way to start development is to use our provided scripts in the `bin` directory:
+
+```bash
+# Start both frontend and backend servers
+./bin/start-dev.sh
+
+# Or start them individually:
+./bin/start-frontend.sh  # For Next.js frontend only
+./bin/start-backend.sh   # For Flask backend only
+```
+
+### Manual Setup
+
+#### Frontend Setup
 1. Install dependencies:
 ```bash
 npm install
@@ -34,7 +48,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 npm run dev
 ```
 
-### Backend Setup
+#### Backend Setup
 1. Navigate to the backend directory:
 ```bash
 cd backend

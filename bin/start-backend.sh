@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Starting Flask Backend..."
-echo "The backend will be available at http://localhost:5000"
+echo "The backend will be available at http://localhost:8000"
 
 # Navigate to backend directory
 cd backend
