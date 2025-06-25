@@ -5,7 +5,7 @@ echo "Frontend will be available at http://localhost:3000"
 echo "Backend will be available at http://localhost:8000"
 
 # Start backend in the background
-./start-backend.sh &
+./bin/start-backend.sh &
 
 # Start frontend
-./start-frontend.sh 
+./bin/start-frontend.sh 
