@@ -2,7 +2,7 @@
 
 echo "Starting EasyCeipt Development Environment..."
 echo "Frontend will be available at http://localhost:3000"
-echo "Backend will be available at http://localhost:5000"
+echo "Backend will be available at http://localhost:8000"
 
 # Start backend in the background
 ./start-backend.sh &
