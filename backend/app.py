@@ -11,7 +11,14 @@ load_dotenv()
 
 # Create Flask app
 easyceipt = Flask(__name__)
-CORS(easyceipt)
+# Set secret key for session management
+secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
+easyceipt.config['SECRET_KEY'] = secret_key
+# Allow cross-origin session cookies for local dev
+easyceipt.config['SESSION_COOKIE_SAMESITE'] = 'None'
+easyceipt.config['SESSION_COOKIE_SECURE'] = False
+# Enable CORS with credentials support
+CORS(easyceipt, supports_credentials=True)
 
 # Register blueprints
 easyceipt.register_blueprint(auth_bp)

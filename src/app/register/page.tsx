@@ -56,6 +56,7 @@ export default function Register() {
           team_number: formData.teamNumber,
           coach_name: formData.coachName
         }),
+        credentials: 'include',
       })
 
       if (response.ok) {

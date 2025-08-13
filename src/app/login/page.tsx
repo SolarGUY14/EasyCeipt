@@ -23,6 +23,7 @@ export default function Login() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -35,7 +36,7 @@ export default function Login() {
         setError(errorData.message || 'Login failed')
       }
     } catch (err) {
-      setError('Network error. Please try again.')
+      setError('Email or password is incorrect.')
     } finally {
       setLoading(false)
     }
