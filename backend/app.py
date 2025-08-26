@@ -4,25 +4,19 @@ from dotenv import load_dotenv
 import os
 
 # Import route blueprints (now cleaner with __init__.py)
-from routes import auth_bp, receipts_bp
+from routes import receipts_bp, purchases_bp
 
 # Load environment variables
 load_dotenv()
 
 # Create Flask app
 easyceipt = Flask(__name__)
-# Set secret key for session management
-secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
-easyceipt.config['SECRET_KEY'] = secret_key
-# Allow cross-origin session cookies for local dev
-easyceipt.config['SESSION_COOKIE_SAMESITE'] = 'None'
-easyceipt.config['SESSION_COOKIE_SECURE'] = False
 # Enable CORS with credentials support
 CORS(easyceipt, supports_credentials=True)
 
 # Register blueprints
-easyceipt.register_blueprint(auth_bp)
 easyceipt.register_blueprint(receipts_bp)
+easyceipt.register_blueprint(purchases_bp)
 
 # Health check route (stays in main app.py)
 @easyceipt.route('/api/health', methods=['GET'])

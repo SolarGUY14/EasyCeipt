@@ -3,18 +3,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth-context'
 
 export default function Home() {
-  const [backendStatus, setBackendStatus] = useState<string>('Loading...')
   const [supabaseStatus, setSupabaseStatus] = useState<string>('Loading...')
+  const { user } = useAuth()
 
   useEffect(() => {
-    // Test Flask backend connection
-    fetch('http://localhost:8000/api/health')
-      .then(res => res.json())
-      .then(data => setBackendStatus(data.message))
-      .catch(err => setBackendStatus('Error connecting to backend'))
-
     // Test Supabase connection
     const testSupabase = async () => {
       try {
@@ -71,12 +66,8 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Status cards - keeping them for debugging */}
-        <div className="mt-16 grid grid-cols-1 gap-4">
-          <div className="p-4 border border-gray-200 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Backend Status</h3>
-            <p className="text-sm text-gray-600">{backendStatus}</p>
-          </div>
+        {/* Status card - keeping for debugging */}
+        <div className="mt-16">
           <div className="p-4 border border-gray-200 rounded-lg">
             <h3 className="text-sm font-medium text-gray-900 mb-2">Supabase Status</h3>
             <p className="text-sm text-gray-600">{supabaseStatus}</p>

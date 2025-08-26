@@ -118,13 +118,24 @@ def logout():
         value='',
         expires=0,
         path='/',
-        samesite='None',
-        secure=True  # Set to True for production
+        samesite='Lax',  # Match the Flask app configuration
+        secure=False  # Set to False for local development, True for production
     )
     return resp
 
 @auth_bp.route('/api/auth/status', methods=['GET'])
 def auth_status():
     if 'email' in session:
-        return jsonify({"authenticated": True, "email": session['email']})
+        try:
+            db = get_supabase_client()
+            response = db.table('Users').select('email, team_name, team_number').eq('email', session['email']).single().execute()
+            user = response.data
+            return jsonify({
+                "authenticated": True, 
+                "email": user['email'],
+                "team_name": user['team_name'],
+                "team_number": user['team_number']
+            })
+        except Exception as e:
+            return jsonify({"authenticated": True, "email": session['email']})
     return jsonify({"authenticated": False}), 401 
