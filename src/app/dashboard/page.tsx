@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
+import { api } from '@/lib/api'
 
 interface Purchase {
-  id: string
+  id: number
   trans_date: string
   vendor: string
   tot_amount: number
@@ -22,7 +23,7 @@ interface UserProfile {
 
 export default function DashboardPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([])
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [selected, setSelected] = useState<Set<number>>(new Set())
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ 
     date: '', 
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
 
@@ -94,7 +96,7 @@ export default function DashboardPage() {
     }
   }
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (id: number) => {
     setSelected(prev => {
       const newSet = new Set(prev)
       if (newSet.has(id)) newSet.delete(id)
@@ -176,6 +178,43 @@ export default function DashboardPage() {
     router.push('/')
   }
 
+  const handlePurchaseClick = (purchaseId: number) => {
+    router.push(`/dashboard/purchase/${purchaseId}`)
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selected.size === 0) return
+    
+    const confirmed = confirm(`Are you sure you want to delete ${selected.size} selected purchase${selected.size > 1 ? 's' : ''}? This action cannot be undone.`)
+    if (!confirmed) return
+
+    setDeleting(true)
+    setError('')
+    
+    try {
+      // Use API client for batch delete with better error handling
+      await api.deletePurchases(Array.from(selected).map(id => id.toString()))
+      
+      // Remove deleted purchases from state
+      setPurchases(prev => prev.filter(p => !selected.has(p.id)))
+      setSelected(new Set())
+      
+    } catch (err) {
+      console.error('Error deleting purchases:', err)
+      setError('Failed to delete some purchases. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleSelectAll = () => {
+    if (selected.size === purchases.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(purchases.map(p => p.id)))
+    }
+  }
+
   if (authLoading) {
     return <div>Loading...</div>
   }
@@ -207,13 +246,46 @@ export default function DashboardPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Purchase Management</h2>
-            <button
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors duration-200 text-sm font-medium"
-              onClick={() => setShowForm(f => !f)}
-            >
-              {showForm ? 'Cancel' : 'Log New Purchase'}
-            </button>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Purchase Management</h2>
+              {selected.size > 0 && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {selected.size} purchase{selected.size > 1 ? 's' : ''} selected
+                </p>
+              )}
+            </div>
+            <div className="flex items-center space-x-3">
+              {selected.size > 0 && (
+                <button
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-2"
+                  onClick={handleDeleteSelected}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete ({selected.size})
+                    </>
+                  )}
+                </button>
+              )}
+              <button
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors duration-200 text-sm font-medium"
+                onClick={() => setShowForm(f => !f)}
+              >
+                {showForm ? 'Cancel' : 'Log New Purchase'}
+              </button>
+            </div>
           </div>
         {showForm && (
           <form className="mb-6 p-4 bg-gray-50 rounded-lg border" onSubmit={handleSubmit}>
@@ -300,11 +372,29 @@ export default function DashboardPage() {
           </div>
         )}
         
+        {purchases.length > 0 && (
+          <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
+            <div className="text-sm text-gray-600">
+              {purchases.length} total purchase{purchases.length > 1 ? 's' : ''}
+            </div>
+            <button
+              onClick={handleSelectAll}
+              className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+            >
+              {selected.size === purchases.length ? 'Clear Selection' : 'Select All'}
+            </button>
+          </div>
+        )}
+        
         <div className="space-y-3">
           {purchases.map(p => (
-            <div key={p.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white hover:shadow-sm transition-shadow duration-200">
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">{p.vendor}</div>
+            <div key={p.id} className="flex items-center p-4 border border-gray-200 rounded-lg bg-white hover:shadow-md transition-all duration-200">
+              <div 
+                className="flex-1 cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors duration-200 group"
+                onClick={() => handlePurchaseClick(p.id)}
+                title="Click to view purchase details"
+              >
+                <div className="font-medium text-gray-900 group-hover:text-purple-700 transition-colors duration-200">{p.vendor}</div>
                 <div className="text-sm text-gray-500">
                   ${p.tot_amount.toFixed(2)} &middot; {new Date(p.trans_date).toLocaleDateString()}
                   {p.tax && <span className="ml-2 text-green-600">• Tax Paid</span>}
@@ -312,6 +402,9 @@ export default function DashboardPage() {
                 {p.describe && (
                   <div className="text-sm text-gray-400 mt-1">{p.describe}</div>
                 )}
+                <div className="text-xs text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  Click to view details →
+                </div>
               </div>
               <button
                 className={`ml-4 px-4 py-2 rounded-md border text-sm font-medium transition-colors duration-200 ${
@@ -319,7 +412,10 @@ export default function DashboardPage() {
                     ? 'bg-purple-600 text-white border-purple-600' 
                     : 'bg-white text-purple-600 border-purple-600 hover:bg-purple-50'
                 }`}
-                onClick={() => toggleSelect(p.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleSelect(p.id)
+                }}
               >
                 {selected.has(p.id) ? 'Selected' : 'Select'}
               </button>

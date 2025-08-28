@@ -11,6 +11,10 @@
   "dependencies": {
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
+    "@supabase/functions-js": "^2.4.5",
+    "@supabase/postgrest-js": "^1.21.3",
+    "@supabase/realtime-js": "^2.15.2",
+    "@supabase/storage-js": "^2.11.0",
     "@supabase/supabase-js": "^2.56.0",
     "next": "15.3.2",
     "react": "^19.0.0",
