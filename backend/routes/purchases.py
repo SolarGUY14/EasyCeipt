@@ -120,27 +120,6 @@ def update_purchase(purchase_id):
     except Exception as e:
         return jsonify({"error": f"Failed to update purchase: {str(e)}"}), 500
 
-@purchases_bp.route('/api/purchases/<int:purchase_id>', methods=['DELETE'])
-def delete_purchase(purchase_id):
-    """Delete a purchase"""
-    user, error = verify_jwt_token()
-    if error:
-        return jsonify({"error": error}), 401
-    
-    try:
-        db = get_supabase_client()
-        
-        # Verify user owns this purchase and delete it
-        response = db.table('Purchases').delete().eq('id', purchase_id).eq('email', user.email).execute()
-        
-        if response.data:
-            return jsonify({"message": "Purchase deleted successfully"})
-        else:
-            return jsonify({"error": "Purchase not found or access denied"}), 404
-            
-    except Exception as e:
-        return jsonify({"error": f"Failed to delete purchase: {str(e)}"}), 500
-
 @purchases_bp.route('/api/purchases/generate-receipt', methods=['POST'])
 def generate_receipt():
     """Generate PDF receipt for selected purchases"""

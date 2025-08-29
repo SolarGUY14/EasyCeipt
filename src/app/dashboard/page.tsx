@@ -192,8 +192,18 @@ export default function DashboardPage() {
     setError('')
     
     try {
-      // Use API client for batch delete with better error handling
-      await api.deletePurchases(Array.from(selected).map(id => id.toString()))
+      // Use Supabase client directly for consistency with how purchases are loaded
+      const idsToDelete = Array.from(selected)
+      
+      const { error } = await supabase
+        .from('Purchases')
+        .delete()
+        .in('id', idsToDelete)
+        .eq('email', user?.email)
+      
+      if (error) {
+        throw error
+      }
       
       // Remove deleted purchases from state
       setPurchases(prev => prev.filter(p => !selected.has(p.id)))
