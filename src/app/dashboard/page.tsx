@@ -85,6 +85,7 @@ export default function DashboardPage() {
         .select('*')
         .eq('email', user.email)
         .order('trans_date', { ascending: false })
+        .order('id', { ascending: false })
 
       if (error) {
         setError('Failed to load purchases')
