@@ -37,6 +37,7 @@ export default function DashboardPage() {
   const [error, setError] = useState('')
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [generatingPDF, setGeneratingPDF] = useState(false)
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
 
@@ -81,6 +82,8 @@ export default function DashboardPage() {
     if (!user) return
     
     try {
+      console.log('Loading purchases for user email:', user.email)
+      
       const { data, error } = await supabase
         .from('Purchases')
         .select('*')
@@ -88,12 +91,16 @@ export default function DashboardPage() {
         .order('trans_date', { ascending: false })
         .order('id', { ascending: false })
 
+      console.log('Purchases query result:', { data, error })
+
       if (error) {
         setError('Failed to load purchases')
       } else {
         setPurchases(data || [])
+        console.log('Loaded purchases:', data?.length || 0, 'purchases for', user.email)
       }
     } catch (err) {
+      console.error('Error in loadPurchases:', err)
       setError('Failed to load purchases')
     }
   }
@@ -233,6 +240,107 @@ export default function DashboardPage() {
     }
   }
 
+  const handleDebugDatabase = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        console.error('No session for debug')
+        return
+      }
+
+      const response = await fetch('http://localhost:8000/api/receipts/debug', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (response.ok) {
+        const debugData = await response.json()
+        console.log('Database debug info:', debugData)
+      } else {
+        console.error('Debug request failed:', response.status)
+      }
+    } catch (err) {
+      console.error('Debug error:', err)
+    }
+  }
+
+  const handleGenerateReceipt = async () => {
+    if (selected.size === 0) return
+    
+    setGeneratingPDF(true)
+    setError('')
+    
+    try {
+      const selectedIds = Array.from(selected)
+      console.log('Selected purchase IDs:', selectedIds)
+      console.log('Current user email:', user?.email)
+      console.log('Available purchases:', purchases.map(p => ({ id: p.id, vendor: p.vendor, email: user?.email })))
+      
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        throw new Error('No active session')
+      }
+
+      console.log('Making request to generate PDF with:', {
+        purchase_ids: selectedIds,
+        user_email: user?.email,
+        token_exists: !!session.access_token
+      })
+
+      const response = await fetch('http://localhost:8000/api/receipts/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ purchase_ids: selectedIds }),
+      })
+
+      console.log('Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+        
+        let errorMessage = 'Failed to generate receipt'
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          // If parsing fails, use the raw text
+          errorMessage = errorText || errorMessage
+        }
+        
+        throw new Error(errorMessage)
+      }
+
+      // Handle PDF download
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = url
+      a.download = `receipt-${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      // Clear selection after successful generation
+      setSelected(new Set())
+      
+    } catch (err: any) {
+      console.error('Error generating receipt:', err)
+      setError(err.message || 'Failed to generate receipt. Please try again.')
+    } finally {
+      setGeneratingPDF(false)
+    }
+  }
+
   if (authLoading) {
     return <div>Loading...</div>
   }
@@ -274,34 +382,75 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center space-x-3">
               {selected.size > 0 && (
-                <button
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-2"
-                  onClick={handleDeleteSelected}
-                  disabled={deleting}
-                >
-                  {deleting ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Deleting...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      Delete ({selected.size})
-                    </>
-                  )}
-                </button>
+                <>
+                  <button
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-2"
+                    onClick={handleGenerateReceipt}
+                    disabled={generatingPDF}
+                  >
+                    {generatingPDF ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Generate Receipt ({selected.size})
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-2"
+                    onClick={handleDeleteSelected}
+                    disabled={deleting}
+                  >
+                    {deleting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete ({selected.size})
+                      </>
+                    )}
+                  </button>
+                </>
               )}
               <button
                 className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors duration-200 text-sm font-medium"
                 onClick={() => setShowForm(f => !f)}
               >
                 {showForm ? 'Cancel' : 'Log New Purchase'}
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
+                onClick={handleDebugDatabase}
+              >
+                Debug DB
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-200 text-sm font-medium"
+                onClick={() => {
+                  setPurchases([])
+                  setSelected(new Set())
+                  loadPurchases()
+                }}
+              >
+                Refresh
               </button>
             </div>
           </div>
