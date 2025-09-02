@@ -11,6 +11,8 @@ interface Purchase {
   vendor: string
   tot_amount: number
   tax: boolean
+  tax_amount: number
+  real_amount: number
   describe: string
   email: string
 }
@@ -126,6 +128,10 @@ export default function PurchaseDetailPage() {
         throw new Error('Please fill in all required fields')
       }
 
+      // Calculate tax amount if tax is paid
+      const taxRate = 0.06 // 6% tax rate
+      const taxAmount = editForm.tax ? editForm.tot_amount * taxRate : 0
+
       const { error } = await supabase
         .from('Purchases')
         .update({
@@ -133,6 +139,8 @@ export default function PurchaseDetailPage() {
           trans_date: editForm.trans_date,
           tot_amount: editForm.tot_amount,
           tax: editForm.tax,
+          tax_amount: taxAmount,
+          real_amount: taxAmount + editForm.tot_amount,
           describe: editForm.describe || ''
         })
         .eq('id', purchase.id)
@@ -143,7 +151,14 @@ export default function PurchaseDetailPage() {
       }
 
       // Update local state and exit edit mode
-      setPurchase({ ...purchase, ...editForm })
+      const calculatedTaxAmount = editForm.tax ? editForm.tot_amount * 0.06 : 0
+      const updatedPurchase = { 
+        ...purchase, 
+        ...editForm, 
+        tax_amount: calculatedTaxAmount,
+        real_amount: editForm.tot_amount + calculatedTaxAmount
+      }
+      setPurchase(updatedPurchase)
       setEditing(false)
       
     } catch (err: any) {
@@ -250,7 +265,7 @@ export default function PurchaseDetailPage() {
                 </div>
                 {purchase.tax && (
                   <div className="text-sm text-green-600 font-medium mt-1">
-                    Tax Paid ✓
+                    Tax Paid: ${purchase.tax_amount?.toFixed(2) || '0.00'} ✓
                   </div>
                 )}
               </div>
@@ -350,9 +365,14 @@ export default function PurchaseDetailPage() {
                   ) : (
                     <div className="text-lg text-gray-900">
                       {purchase.tax ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Tax Paid
-                        </span>
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Tax Paid
+                          </span>
+                          <div className="text-sm text-gray-600">
+                            Tax Amount: ${purchase.tax_amount?.toFixed(2) || '0.00'} (6%)
+                          </div>
+                        </div>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           No Tax
