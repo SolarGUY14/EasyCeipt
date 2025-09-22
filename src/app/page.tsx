@@ -1,35 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 
 export default function Home() {
-  const [supabaseStatus, setSupabaseStatus] = useState<string>('Loading...')
   const { user } = useAuth()
-
-  useEffect(() => {
-    // Test Supabase connection
-    const testSupabase = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('_test')
-          .select('*')
-          .limit(1)
-        
-        if (error) {
-          setSupabaseStatus('Connected to Supabase (table not found, which is OK)')
-        } else {
-          setSupabaseStatus('Connected to Supabase successfully')
-        }
-      } catch (err) {
-        setSupabaseStatus('Error connecting to Supabase')
-      }
-    }
-
-    testSupabase()
-  }, [])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -54,24 +29,16 @@ export default function Home() {
         <div className="flex justify-center space-x-4">
           <Link 
             href="/login" 
-            className="inline-block px-6 py-3 text-base font-semibold text-blue-600 bg-transparent border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200"
+            className="inline-block px-6 py-3 text-base font-semibold text-purple-600 bg-transparent border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors duration-200"
           >
             Login
           </Link>
           <Link 
             href="/register" 
-            className="inline-block px-6 py-3 text-base font-semibold text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            className="inline-block px-6 py-3 text-base font-semibold text-white bg-purple-600 border border-purple-600 rounded-lg hover:bg-purple-700 transition-colors duration-200"
           >
             Create an Account
           </Link>
-        </div>
-
-        {/* Status card - keeping for debugging */}
-        <div className="mt-16">
-          <div className="p-4 border border-gray-200 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Supabase Status</h3>
-            <p className="text-sm text-gray-600">{supabaseStatus}</p>
-          </div>
         </div>
       </div>
     </div>

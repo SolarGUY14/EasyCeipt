@@ -240,33 +240,6 @@ export default function DashboardPage() {
     }
   }
 
-  const handleDebugDatabase = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        console.error('No session for debug')
-        return
-      }
-
-      const response = await fetch('http://localhost:8000/api/receipts/debug', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      })
-
-      if (response.ok) {
-        const debugData = await response.json()
-        console.log('Database debug info:', debugData)
-      } else {
-        console.error('Debug request failed:', response.status)
-      }
-    } catch (err) {
-      console.error('Debug error:', err)
-    }
-  }
-
   const handleGenerateReceipt = async () => {
     if (selected.size === 0) return
     
@@ -435,22 +408,6 @@ export default function DashboardPage() {
                 onClick={() => setShowForm(f => !f)}
               >
                 {showForm ? 'Cancel' : 'Log New Purchase'}
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
-                onClick={handleDebugDatabase}
-              >
-                Debug DB
-              </button>
-              <button
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-200 text-sm font-medium"
-                onClick={() => {
-                  setPurchases([])
-                  setSelected(new Set())
-                  loadPurchases()
-                }}
-              >
-                Refresh
               </button>
             </div>
           </div>

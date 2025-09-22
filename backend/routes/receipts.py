@@ -31,52 +31,6 @@ def verify_jwt_token():
         print(f"JWT verification failed: {str(e)}")
         return None, f"Invalid token: {str(e)}"
 
-@receipts_bp.route('/api/receipts/debug', methods=['GET'])
-def debug_purchases():
-    """Debug endpoint to check what purchases exist"""
-    user, error = verify_jwt_token()
-    if error:
-        return jsonify({"error": error}), 401
-    
-    try:
-        # Get the auth token from the request
-        auth_header = request.headers.get('Authorization')
-        token = auth_header.split(' ')[1] if auth_header else None
-        
-        db = get_supabase_client()
-        
-        # Set the auth token for this session
-        if token:
-            db.auth.set_session(access_token=token, refresh_token="")
-        
-        # Get all purchases for this user
-        print(f"Querying purchases for exact email: '{user.email}'")
-        user_purchases = db.table('Purchases').select('*').eq('email', user.email).execute()
-        print(f"User purchases result: {user_purchases}")
-        
-        # Get all purchases in the database (first 10) 
-        all_purchases = db.table('Purchases').select('id, email, vendor').limit(10).execute()
-        print(f"All purchases result: {all_purchases}")
-        
-        # Get ALL purchases without any filter to see what's really there
-        all_unfiltered = db.table('Purchases').select('*').execute()
-        print(f"All unfiltered purchases: {all_unfiltered}")
-        
-        return jsonify({
-            "current_user_email": user.email,
-            "user_purchases_count": len(user_purchases.data) if user_purchases.data else 0,
-            "user_purchases": user_purchases.data[:5] if user_purchases.data else [],  # First 5 only
-            "all_purchases_sample": all_purchases.data if all_purchases.data else [],
-            "total_purchases_in_db": len(all_unfiltered.data) if all_unfiltered.data else 0,
-            "all_unfiltered_sample": all_unfiltered.data[:5] if all_unfiltered.data else [],
-            "auth_token_present": bool(token),
-            "supabase_url": db.supabase_url
-        })
-        
-    except Exception as e:
-        print(f"Debug error: {str(e)}")
-        return jsonify({"error": f"Debug failed: {str(e)}"}), 500
-
 @receipts_bp.route('/api/receipts/generate-pdf', methods=['POST'])
 def generate_pdf_receipt():
     """Generate PDF receipt for selected purchases"""
@@ -115,8 +69,8 @@ def generate_pdf_receipt():
         if not response.data:
             return jsonify({"error": "No purchases found"}), 404
         
-        # Get user profile for receipt header
-        user_response = db.table('Users').select('team_name, team_number').eq('email', user.email).single().execute()
+                # Get user profile for receipt header
+        user_response = db.table('Users').select('team_name, team_number, coach_name').eq('email', user.email).single().execute()
         user_profile = user_response.data if user_response.data else {}
         
         # Generate PDF
@@ -139,9 +93,8 @@ def generate_pdf_receipt():
         # Title
         team_name = user_profile.get('team_name', 'Team')
         team_number = user_profile.get('team_number', 'N/A')
-        team_email = user_profile.get('email', 'N/A')
         coach_name = user_profile.get('coach_name', 'N/A')
-        title = Paragraph(f"<b>Expense Receipt - {team_name} (Team {team_number})</b>\n <b>Coach:</b> {coach_name}\n <b>Email:</b> {team_email}", title_style)
+        title = Paragraph(f"<b>Expense Receipt - {team_name} (Team {team_number})</b><br/><b>Coach:</b> {coach_name}<br/><b>Email:</b> {user.email}", title_style)
         elements.append(title)
         
         # Date
